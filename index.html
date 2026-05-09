@@ -343,25 +343,52 @@ if(sessionStorage.getItem('p4a')==='1'){
 let db = [];
 let lastKey = '';
 
-function getToken(){return localStorage.getItem('p4gt')||'';}
+function getToken(){
+  // Check input field first (live value), then localStorage
+  const inp = document.getElementById('gtoken');
+  const live = inp ? inp.value.trim() : '';
+  return live || localStorage.getItem('p4gt') || '';
+}
 function saveToken(){
   const t=document.getElementById('gtoken').value.trim();
   if(!t){showSettMsg('❌ Token boş');return;}
-  localStorage.setItem('p4gt',t);
-  showSettMsg('✓ Token kaydedildi');
+  // Strip any accidental spaces or newlines
+  const clean = t.replace(/\s/g,'');
+  localStorage.setItem('p4gt', clean);
+  document.getElementById('gtoken').value = clean;
+  showSettMsg('✓ Token kaydedildi — şimdi key oluşturabilirsin');
+  toast('✓ Token kaydedildi');
+}
+
+function authHeaders(extra){
+  const token = getToken();
+  const h = {
+    'Accept': 'application/vnd.github.v3+json',
+    ...extra
+  };
+  if(token) h['Authorization'] = 'Bearer ' + token;
+  return h;
 }
 
 async function fetchGist(){
   setSyncBusy('Gist yükleniyor…');
   try{
     const res=await fetch(`https://api.github.com/gists/${GIST_ID}?t=${Date.now()}`,{
-      headers:{Accept:'application/vnd.github.v3+json',...(getToken()?{Authorization:'token '+getToken()}:{})}
+      headers: authHeaders({})
     });
+    if(res.status===401)throw new Error('401 — Token geçersiz veya eksik');
+    if(res.status===403)throw new Error('403 — Token yetki hatası');
+    if(res.status===404)throw new Error('404 — Gist bulunamadı, ID kontrol et');
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
     const file=data.files['p4_db.json'];
-    if(!file)throw new Error('p4_db.json bulunamadı');
-    db=JSON.parse(file.content);
+    if(!file){
+      // File doesn't exist yet — start with empty array
+      db=[];
+      setSyncOk('Gist bağlı (p4_db.json yok — key oluşturunca otomatik yaratılır)');
+      return true;
+    }
+    db=JSON.parse(file.content||'[]');
     setSyncOk('Gist bağlı · '+new Date().toLocaleTimeString('tr-TR'));
     return true;
   }catch(e){
@@ -372,19 +399,31 @@ async function fetchGist(){
 
 async function pushGist(){
   const token=getToken();
-  if(!token){showSettMsg('❌ Gist Token girilmedi! Ayarlardan ekle.');toast('Token gerekli — Ayarlar bölümüne ekle');return false;}
+  if(!token){
+    showSettMsg('❌ Token girilmedi — Ayarlar bölümüne ekle ve Kaydet butonuna bas');
+    toast('❌ Token eksik!');
+    return false;
+  }
   setSyncBusy('Gist güncelleniyor…');
   try{
     const res=await fetch(`https://api.github.com/gists/${GIST_ID}`,{
       method:'PATCH',
-      headers:{Accept:'application/vnd.github.v3+json','Content-Type':'application/json',Authorization:'token '+token},
+      headers: authHeaders({'Content-Type':'application/json'}),
       body:JSON.stringify({files:{'p4_db.json':{content:JSON.stringify(db,null,2)}}})
     });
-    if(!res.ok)throw new Error('HTTP '+res.status);
+    if(res.status===401)throw new Error('401 — Token geçersiz. Yeni token oluştur.');
+    if(res.status===403)throw new Error('403 — Token gist yazma yetkisi yok.');
+    if(res.status===404)throw new Error('404 — Gist ID yanlış.');
+    if(res.status===422)throw new Error('422 — Gist içerik hatası.');
+    if(!res.ok){
+      const err=await res.json().catch(()=>({}));
+      throw new Error(`HTTP ${res.status}: ${err.message||'Bilinmeyen hata'}`);
+    }
     setSyncOk('Gist güncellendi · '+new Date().toLocaleTimeString('tr-TR'));
     return true;
   }catch(e){
     setSyncErr('Push hatası: '+e.message);
+    toast('❌ '+e.message);
     return false;
   }
 }
@@ -560,9 +599,11 @@ function toast(msg){
 }
 
 async function init(){
-  // Load token if saved
-  const saved=localStorage.getItem('p4gt');
-  if(saved)document.getElementById('gtoken').value=saved;
+  // Load saved token into input
+  const saved = localStorage.getItem('p4gt');
+  if(saved){
+    document.getElementById('gtoken').value = saved;
+  }
   await loadKeys();
 }
 </script>

@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>provider.4 — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000;--surf:#0d0d0d;--surf2:#161616;--surf3:#1f1f1f;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --a:#00ff88;--a-d:#00cc66;--ag:rgba(0,255,136,0.12);
+  --danger:#ff3355;--warn:#ffcc00;--info:#4488ff;
+  --text:#f5f5f5;--text2:#888;--text3:#444;
+  --mono:'Space Mono',monospace;--sans:'Space Grotesk',sans-serif;
+  --ib:env(safe-area-inset-bottom,0px);--it:env(safe-area-inset-top,0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100dvh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 50% 30% at 50% 0%,var(--ag),transparent 60%);pointer-events:none}
+
+/* ════ LOGIN ════ */
+#ls{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;background:var(–bg);transition:opacity .4s,transform .4s}
+#ls.out{opacity:0;transform:scale(1.05);pointer-events:none}
+.lc{width:100%;max-width:380px;background:rgba(255,255,255,0.03);border:1px solid var(–border2);border-radius:22px;padding:32px 24px;backdrop-filter:blur(20px)}
+.ll{font-family:var(–mono);font-size:11px;letter-spacing:4px;color:var(–a);text-align:center;margin-bottom:6px}
+.lt{font-size:24px;font-weight:800;text-align:center;margin-bottom:4px;letter-spacing:-.5px}
+.ls2{font-size:11px;color:var(–text2);letter-spacing:1px;text-align:center;margin-bottom:28px;text-transform:uppercase}
+.lf{margin-bottom:14px}
+.lfl{display:block;font-family:var(–mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(–text2);margin-bottom:7px}
+.li{width:100%;background:rgba(255,255,255,.05);border:1px solid var(–border);border-radius:11px;color:var(–text);font-family:var(–mono);font-size:14px;padding:13px 14px;outline:none;-webkit-appearance:none;transition:.2s}
+.li:focus{border-color:rgba(0,255,136,.5);box-shadow:0 0 0 3px rgba(0,255,136,.07)}
+.lb{width:100%;background:var(–a);border:none;border-radius:11px;color:#000;font-family:var(–sans);font-size:14px;font-weight:800;height:50px;cursor:pointer;margin-top:8px;transition:.15s}
+.lb:active{transform:scale(.97)}
+.lerr{font-family:var(–mono);font-size:11px;text-align:center;min-height:18px;margin-top:10px;color:var(–text3)}
+.lerr.e{color:var(–danger)}.lerr.o{color:var(–a)}.lerr.s::before{content:’’;display:inline-block;width:9px;height:9px;border:1.5px solid var(–border2);border-top-color:var(–a);border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle}
+
+/* ════ ADMIN ════ */
+#panel{display:none;position:relative;z-index:1;max-width:640px;margin:0 auto;min-height:100dvh;flex-direction:column}
+#panel.on{display:flex}
+
+.topbar{padding:calc(var(–it)+12px) 16px 10px;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(–border);position:sticky;top:0;z-index:20;flex-shrink:0}
+.tbl{font-family:var(–mono);font-size:12px;font-weight:700;color:var(–a);letter-spacing:2px;flex-shrink:0}
+.tbd{width:1px;height:14px;background:var(–border2)}
+.tbname{font-size:11px;color:var(–text2);flex:1;font-family:var(–mono)}
+.tbo{background:none;border:1px solid var(–border2);border-radius:8px;color:var(–text2);font-family:var(–mono);font-size:10px;padding:5px 11px;cursor:pointer;min-height:30px;transition:.15s}
+.tbo:active{border-color:var(–danger);color:var(–danger)}
+
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 14px calc(24px + var(–ib))}
+
+/* ════ CARDS ════ */
+.gc{background:rgba(255,255,255,.025);border:1px solid var(–border);border-radius:14px;margin-bottom:12px;overflow:hidden}
+.gc-h{padding:11px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(–border)}
+.gc-t{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(–text2)}
+.gc-b{padding:13px 14px}
+
+/* ════ STATS ════ */
+.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.sc{background:rgba(255,255,255,.025);border:1px solid var(–border);border-radius:12px;padding:13px 10px;text-align:center;position:relative;overflow:hidden}
+.sc::after{content:’’;position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(–a),transparent)}
+.sv{font-size:26px;font-weight:700;font-family:var(–mono);color:var(–a);margin-bottom:3px}
+.sk{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(–text3)}
+
+/* ════ FORM ════ */
+.field{margin-bottom:11px}
+.flbl{display:block;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(–text2);margin-bottom:7px;font-weight:700}
+input[type=text],input[type=password],select,textarea{
+width:100%;background:rgba(255,255,255,.04);border:1px solid var(–border);border-radius:10px;
+color:var(–text);font-family:var(–mono);font-size:13px;padding:11px 13px;
+outline:none;-webkit-appearance:none;appearance:none;transition:.18s;resize:none;
+}
+input:focus,select:focus,textarea:focus{border-color:rgba(0,255,136,.4);box-shadow:0 0 0 3px rgba(0,255,136,.06)}
+select{background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘12’ height=‘12’ viewBox=‘0 0 12 12’%3E%3Cpath fill=’%23666’ d=‘M6 8L1 3h10z’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer}
+select option{background:#111}
+.frow{display:flex;gap:8px;flex-wrap:wrap}
+.frow .field{flex:1;min-width:120px}
+
+/* ════ BUTTONS ════ */
+.btn{background:var(–a);border:none;border-radius:10px;color:#000;font-family:var(–sans);font-size:13px;font-weight:700;padding:0 16px;height:42px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s;white-space:nowrap}
+.btn:active{transform:scale(.96)}
+.btn.full{width:100%;justify-content:center}
+.btn.ghost{background:rgba(255,255,255,.06);color:var(–text);border:1px solid var(–border2)}
+.btn.danger{background:var(–danger);color:#fff}
+.btn.warn{background:var(–warn);color:#000}
+.btn.info{background:var(–info);color:#fff}
+.btn.sm{height:32px;font-size:11px;padding:0 11px;border-radius:8px}
+
+/* ════ KEY LIST ════ */
+.ki{background:rgba(255,255,255,.025);border:1px solid var(–border);border-radius:12px;padding:12px 14px;margin-bottom:8px;transition:.15s}
+.ki.revoked{opacity:.35}
+.ki.expired{opacity:.45}
+.ki-top{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
+.ki-user{font-family:var(–mono);font-size:12px;font-weight:700;color:var(–a)}
+.ki-badge{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:8px;border:1px solid}
+.ki-badge.active{color:var(–a);border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.08)}
+.ki-badge.expired{color:var(–warn);border-color:rgba(255,204,0,.3);background:rgba(255,204,0,.07)}
+.ki-badge.revoked{color:var(–danger);border-color:rgba(255,51,85,.3);background:rgba(255,51,85,.07)}
+.ki-plan{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:8px;border:1px solid var(–border2);color:var(–text2)}
+.ki-plan.pro{color:var(–info);border-color:rgba(68,136,255,.3);background:rgba(68,136,255,.07)}
+.ki-plan.admin{color:var(–warn);border-color:rgba(255,204,0,.3);background:rgba(255,204,0,.07)}
+.ki-key{font-family:var(–mono);font-size:10px;color:var(–text2);margin-bottom:6px;word-break:break-all;letter-spacing:.5px}
+.ki-info{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.ki-inf-item{font-size:10px;color:var(–text3)}
+.ki-inf-item b{color:var(–text2)}
+.ki-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ════ SEARCH ════ */
+.search{width:100%;background:rgba(255,255,255,.04);border:1px solid var(–border);border-radius:10px;color:var(–text);font-family:var(–mono);font-size:13px;padding:10px 14px;outline:none;margin-bottom:10px;-webkit-appearance:none;transition:.18s}
+.search:focus{border-color:rgba(0,255,136,.35)}
+
+/* ════ RESULT BOX ════ */
+.result-box{background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.22);border-radius:11px;padding:14px;margin-top:12px;display:none}
+.result-box.on{display:block;animation:fu .3s ease}
+.result-key{font-family:var(–mono);font-size:12px;color:var(–a);word-break:break-all;margin-bottom:10px;letter-spacing:.5px}
+
+/* ════ SYNC STATUS ════ */
+.sync-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,255,255,.02);border-radius:8px;margin-bottom:10px}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sync-dot.ok{background:var(–a)}
+.sync-dot.err{background:var(–danger)}
+.sync-dot.busy{background:var(–warn);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sync-txt{font-family:var(–mono);font-size:10px;color:var(–text2);flex:1}
+.sync-time{font-family:var(–mono);font-size:9px;color:var(–text3)}
+
+/* ════ EMPTY ════ */
+.empty{text-align:center;padding:28px;color:var(–text3);font-size:12px}
+.empty strong{display:block;font-size:15px;color:var(–text2);margin-bottom:6px}
+
+/* ════ TOAST ════ */
+.toast{position:fixed;bottom:calc(20px + var(–ib));left:50%;transform:translateX(-50%) translateY(20px);background:rgba(20,20,20,.95);border:1px solid var(–border2);border-radius:10px;padding:10px 18px;font-size:12px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:9000;white-space:nowrap;backdrop-filter:blur(12px)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.wm{position:fixed;bottom:calc(var(–ib)+5px);right:13px;font-family:var(–mono);font-size:8px;color:var(–text3);letter-spacing:1px;z-index:30;pointer-events:none}
+.stl{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(–text3);margin-bottom:8px;padding:0 2px}
+.divider{height:1px;background:var(–border);margin:14px 0}
+
+.fu{animation:fu .3s ease forwards;opacity:0}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:2px}
+::-webkit-scrollbar-thumb{background:var(–surf3);border-radius:2px}
+</style>
+
+</head>
+<body>
+
+<!-- LOGIN -->
+
+<div id="ls">
+  <div class="lc">
+    <div class="ll">PROVIDER.4</div>
+    <div class="lt">Admin Paneli</div>
+    <div class="ls2">Yetkili erişimi gerekli</div>
+    <div class="lf">
+      <label class="lfl">Admin Şifresi</label>
+      <input type="password" class="li" id="ap" placeholder="••••••••" onkeydown="if(event.key==='Enter')tryLogin()">
+    </div>
+    <button class="lb" onclick="tryLogin()">🔐 Giriş Yap</button>
+    <div class="lerr" id="lerr"></div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+
+<div id="panel">
+  <div class="topbar">
+    <div class="tbl">p.4</div>
+    <div class="tbd"></div>
+    <div class="tbname">KEY YÖNETİMİ</div>
+    <button class="tbo" onclick="doLogout()">Çıkış ↩</button>
+  </div>
+
+  <div class="scroll">
+
+```
+<!-- Sync Status -->
+<div class="sync-bar" id="syncBar">
+  <div class="sync-dot busy" id="syncDot"></div>
+  <div class="sync-txt" id="syncTxt">Gist bağlantısı kontrol ediliyor…</div>
+  <div class="sync-time" id="syncTime"></div>
+</div>
+
+<!-- Stats -->
+<div class="sg">
+  <div class="sc"><div class="sv" id="stTotal">—</div><div class="sk">Toplam</div></div>
+  <div class="sc"><div class="sv" id="stActive" style="color:var(--a)">—</div><div class="sk">Aktif</div></div>
+  <div class="sc"><div class="sv" id="stRevoked" style="color:var(--danger)">—</div><div class="sk">İptal</div></div>
+</div>
+
+<!-- Key Oluştur -->
+<div class="gc">
+  <div class="gc-h"><div class="gc-t">➕ YENİ KEY OLUŞTUR</div></div>
+  <div class="gc-b">
+    <div class="frow">
+      <div class="field">
+        <label class="flbl">Kullanıcı Adı</label>
+        <input type="text" id="nu" placeholder="kullanici_adi" autocorrect="off" autocapitalize="off">
+      </div>
+    </div>
+    <div class="frow">
+      <div class="field">
+        <label class="flbl">Süre</label>
+        <select id="nd">
+          <option value="0">Süresiz</option>
+          <option value="7">7 Gün</option>
+          <option value="30">30 Gün</option>
+          <option value="90">90 Gün</option>
+          <option value="365">1 Yıl</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="flbl">Plan</label>
+        <select id="np">
+          <option value="basic">Basic</option>
+          <option value="pro">Pro</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="flbl">Not (opsiyonel)</label>
+      <input type="text" id="nn" placeholder="Kullanıcı notu…" autocorrect="off">
+    </div>
+    <button class="btn full" onclick="createKey()">🔑 Key Oluştur & Gist'e Kaydet</button>
+
+    <!-- Result -->
+    <div class="result-box" id="resultBox">
+      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:8px">Oluşturulan Key</div>
+      <div class="result-key" id="resultKey"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn sm" onclick="copyResult()">📋 Kopyala</button>
+        <button class="btn sm ghost" onclick="shareResult()">📤 Paylaş</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Key Listesi -->
+<div class="gc">
+  <div class="gc-h">
+    <div class="gc-t">🗂 TÜM KEYLER</div>
+    <div style="display:flex;gap:6px">
+      <button class="btn sm ghost" onclick="loadKeys()">↻</button>
+      <button class="btn sm ghost" onclick="exportCSV()">CSV</button>
+    </div>
+  </div>
+  <div class="gc-b">
+    <input type="text" class="search" id="srch" placeholder="Kullanıcı adı veya key ara…" oninput="renderKeys()">
+    <div id="keyList"></div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Ayarlar -->
+<div class="stl">Admin Ayarları</div>
+<div class="gc">
+  <div class="gc-b">
+    <div class="field">
+      <label class="flbl">Admin Şifresini Değiştir</label>
+      <input type="password" id="newPass" placeholder="Yeni şifre (min 6 karakter)…">
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn sm" onclick="changePass()">🔒 Şifreyi Değiştir</button>
+      <button class="btn sm ghost" onclick="exportCSV()">📤 CSV Dışa Aktar</button>
+      <button class="btn sm ghost" onclick="loadKeys()">🔄 Gist'ten Yenile</button>
+    </div>
+    <div class="field">
+      <label class="flbl">Gist Token (Key yazmak için)</label>
+      <input type="password" id="gtoken" placeholder="ghp_xxxxxxxxxxxx" autocorrect="off" autocapitalize="off">
+      <div style="font-size:10px;color:var(--text3);margin-top:5px">Settings → Developer settings → Personal access tokens → gist scope</div>
+    </div>
+    <button class="btn sm" onclick="saveToken()">💾 Token Kaydet</button>
+    <div style="height:12px"></div>
+    <button class="btn sm danger full" onclick="clearAllKeys()">🗑 Tüm Keyleri Sil</button>
+    <div id="settMsg" style="font-size:11px;color:var(--a);margin-top:8px;min-height:16px"></div>
+  </div>
+</div>
+
+<div style="text-align:center;padding:14px 0 4px">
+  <div style="font-family:var(--mono);font-size:11px;color:var(--a);letter-spacing:2px">provider.4</div>
+  <div style="font-size:9px;color:var(--text3);margin-top:3px;letter-spacing:1px">ADMIN PANEL v4.0</div>
+</div>
+```
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="wm">provider.4</div>
+
+<script>
+'use strict';
+// ════════════════════════════════════════
+// CONFIG — güncelle
+// ════════════════════════════════════════
+const GIST_ID = '1ae4dd781cc3b4f8fd70f3c3bc77c3d9';
+
+// ════════════════════════════════════════
+// AUTH — şifre hash ile korunuyor
+// ════════════════════════════════════════
+function h(s){let n=0;for(let i=0;i<s.length;i++)n=Math.imul(31,n)+s.charCodeAt(i)|0;return(n>>>0).toString(36);}
+const HASH_KEY = 'p4ah';
+function getHash(){return localStorage.getItem(HASH_KEY)||h('provider4admin');}
+
+function tryLogin(){
+  const p = document.getElementById('ap').value;
+  if(!p){setErr('Şifre girin','e');return;}
+  if(h(p)!==getHash()){setErr('❌ Hatalı şifre','e');document.getElementById('ap').value='';return;}
+  sessionStorage.setItem('p4a','1');
+  document.getElementById('ls').classList.add('out');
+  document.getElementById('panel').classList.add('on');
+  init();
+}
+function doLogout(){
+  sessionStorage.removeItem('p4a');
+  document.getElementById('ls').classList.remove('out');
+  document.getElementById('panel').classList.remove('on');
+  document.getElementById('ap').value='';
+  setErr('','');
+}
+function changePass(){
+  const np=document.getElementById('newPass').value;
+  if(np.length<6){showSettMsg('❌ Min 6 karakter');return;}
+  localStorage.setItem(HASH_KEY,h(np));
+  document.getElementById('newPass').value='';
+  showSettMsg('✓ Şifre güncellendi');
+}
+function setErr(m,c){const e=document.getElementById('lerr');e.textContent=m;e.className='lerr '+(c||'');}
+
+if(sessionStorage.getItem('p4a')==='1'){
+  document.getElementById('ls').classList.add('out');
+  document.getElementById('panel').classList.add('on');
+  setTimeout(init, 100);
+}
+
+// ════════════════════════════════════════
+// GIST API
+// ════════════════════════════════════════
+let db = [];
+let lastKey = '';
+
+function getToken(){return localStorage.getItem('p4gt')||'';}
+function saveToken(){
+  const t=document.getElementById('gtoken').value.trim();
+  if(!t){showSettMsg('❌ Token boş');return;}
+  localStorage.setItem('p4gt',t);
+  showSettMsg('✓ Token kaydedildi');
+}
+
+async function fetchGist(){
+  setSyncBusy('Gist yükleniyor…');
+  try{
+    const res=await fetch(`https://api.github.com/gists/${GIST_ID}?t=${Date.now()}`,{
+      headers:{Accept:'application/vnd.github.v3+json',...(getToken()?{Authorization:'token '+getToken()}:{})}
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    const file=data.files['p4_db.json'];
+    if(!file)throw new Error('p4_db.json bulunamadı');
+    db=JSON.parse(file.content);
+    setSyncOk('Gist bağlı · '+new Date().toLocaleTimeString('tr-TR'));
+    return true;
+  }catch(e){
+    setSyncErr('Hata: '+e.message);
+    return false;
+  }
+}
+
+async function pushGist(){
+  const token=getToken();
+  if(!token){showSettMsg('❌ Gist Token girilmedi! Ayarlardan ekle.');toast('Token gerekli — Ayarlar bölümüne ekle');return false;}
+  setSyncBusy('Gist güncelleniyor…');
+  try{
+    const res=await fetch(`https://api.github.com/gists/${GIST_ID}`,{
+      method:'PATCH',
+      headers:{Accept:'application/vnd.github.v3+json','Content-Type':'application/json',Authorization:'token '+token},
+      body:JSON.stringify({files:{'p4_db.json':{content:JSON.stringify(db,null,2)}}})
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    setSyncOk('Gist güncellendi · '+new Date().toLocaleTimeString('tr-TR'));
+    return true;
+  }catch(e){
+    setSyncErr('Push hatası: '+e.message);
+    return false;
+  }
+}
+
+function setSyncBusy(t){
+  document.getElementById('syncDot').className='sync-dot busy';
+  document.getElementById('syncTxt').textContent=t;
+  document.getElementById('syncTime').textContent='';
+}
+function setSyncOk(t){
+  document.getElementById('syncDot').className='sync-dot ok';
+  document.getElementById('syncTxt').textContent='Gist bağlı';
+  document.getElementById('syncTime').textContent=new Date().toLocaleTimeString('tr-TR');
+}
+function setSyncErr(t){
+  document.getElementById('syncDot').className='sync-dot err';
+  document.getElementById('syncTxt').textContent=t;
+  document.getElementById('syncTime').textContent='';
+}
+
+// ════════════════════════════════════════
+// KEY MANAGEMENT
+// ════════════════════════════════════════
+function genKey(){
+  const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const s=()=>Array.from({length:5},()=>c[Math.floor(Math.random()*c.length)]).join('');
+  return `P4-${s()}-${s()}-${s()}-${s()}`;
+}
+
+async function createKey(){
+  const user=document.getElementById('nu').value.trim().toLowerCase().replace(/[^a-z0-9_.]/g,'');
+  const dur=parseInt(document.getElementById('nd').value);
+  const plan=document.getElementById('np').value;
+  const note=document.getElementById('nn').value.trim();
+  if(!user){toast('Kullanıcı adı girin');return;}
+  const exists=db.find(k=>k.user===user&&k.status==='active');
+  if(exists){if(!confirm(`${user} kullanıcısının zaten aktif bir key'i var. Yine de oluştur?`))return;}
+  const now=Date.now();
+  const entry={
+    id:now.toString(36)+Math.random().toString(36).slice(2,6),
+    key:genKey(),user,plan,note,
+    created:now,
+    expires:dur>0?now+dur*86400000:0,
+    status:'active',
+    usedAt:null,
+    useCount:0,
+  };
+  db.unshift(entry);
+  const ok=await pushGist();
+  if(ok){
+    lastKey=entry.key;
+    document.getElementById('resultKey').textContent=`👤 ${entry.user}\n🔑 ${entry.key}\n📅 ${dur>0?dur+' gün':'Süresiz'} · ${plan.toUpperCase()}`;
+    document.getElementById('resultBox').classList.add('on');
+    document.getElementById('nu').value='';
+    document.getElementById('nn').value='';
+    renderStats();renderKeys();
+    toast('✓ Key oluşturuldu ve Gist\'e kaydedildi');
+  }else{
+    db.shift(); // rollback
+  }
+}
+
+function copyResult(){navigator.clipboard.writeText(lastKey);toast('✓ Key kopyalandı');}
+function shareResult(){if(navigator.share)navigator.share({title:'provider.4 Key',text:document.getElementById('resultKey').textContent});else copyResult();}
+
+async function revokeKey(id){
+  const k=db.find(x=>x.id===id);
+  if(!k)return;
+  k.status='revoked';
+  const ok=await pushGist();
+  if(ok){renderStats();renderKeys();toast('Key iptal edildi');}
+  else k.status='active';
+}
+
+async function reactivateKey(id){
+  const k=db.find(x=>x.id===id);
+  if(!k)return;
+  k.status='active';
+  const ok=await pushGist();
+  if(ok){renderStats();renderKeys();toast('✓ Key aktifleştirildi');}
+  else k.status='revoked';
+}
+
+async function deleteKey(id){
+  if(!confirm('Bu key silinsin mi?'))return;
+  const idx=db.findIndex(x=>x.id===id);
+  if(idx===-1)return;
+  const removed=db.splice(idx,1)[0];
+  const ok=await pushGist();
+  if(ok){renderStats();renderKeys();toast('Key silindi');}
+  else db.splice(idx,0,removed);
+}
+
+async function clearAllKeys(){
+  if(!confirm('TÜM KEYLER SİLİNECEK! Emin misin?'))return;
+  if(!confirm('Son onay — bu işlem geri alınamaz!'))return;
+  const backup=[...db];
+  db=[];
+  const ok=await pushGist();
+  if(ok){renderStats();renderKeys();toast('Tüm keyler silindi');}
+  else{db=backup;toast('❌ Silinemedi');}
+}
+
+async function loadKeys(){
+  const ok=await fetchGist();
+  if(ok){renderStats();renderKeys();}
+}
+
+// ════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════
+function renderStats(){
+  const now=Date.now();
+  const active=db.filter(k=>k.status==='active'&&(!k.expires||k.expires>now)).length;
+  const revoked=db.filter(k=>k.status==='revoked').length;
+  document.getElementById('stTotal').textContent=db.length;
+  document.getElementById('stActive').textContent=active;
+  document.getElementById('stRevoked').textContent=revoked;
+}
+
+function renderKeys(){
+  const q=(document.getElementById('srch').value||'').toLowerCase();
+  const now=Date.now();
+  let list=db;
+  if(q)list=list.filter(k=>k.user.includes(q)||k.key.toLowerCase().includes(q)||(k.note||'').toLowerCase().includes(q));
+  const el=document.getElementById('keyList');
+  if(!list.length){el.innerHTML=`<div class="empty"><strong>${q?'Sonuç bulunamadı':'Key yok'}</strong>${q?'Arama terimini değiştir':'Yukarıdan yeni key oluştur'}</div>`;return;}
+  el.innerHTML=list.map((k,i)=>{
+    const expired=k.expires>0&&k.expires<now;
+    const status=k.status==='revoked'?'revoked':expired?'expired':'active';
+    const statusLabel={active:'Aktif',expired:'Süresi Doldu',revoked:'İptal'}[status];
+    const expStr=k.expires>0?new Date(k.expires).toLocaleDateString('tr-TR'):'Süresiz';
+    const createdStr=new Date(k.created).toLocaleDateString('tr-TR');
+    return`<div class="ki ${status} fu" style="animation-delay:${i*30}ms">
+      <div class="ki-top">
+        <span class="ki-user">@${k.user}</span>
+        <span class="ki-badge ${status}">${statusLabel}</span>
+        <span class="ki-plan ${k.plan}">${k.plan.toUpperCase()}</span>
+        <span style="font-size:10px;color:var(--text3);margin-left:auto">${createdStr}</span>
+      </div>
+      <div class="ki-key">${k.key}</div>
+      <div class="ki-info">
+        <div class="ki-inf-item">⏱ <b>${expStr}</b></div>
+        <div class="ki-inf-item">🔢 <b>${k.useCount||0}</b> kullanım</div>
+        ${k.usedAt?`<div class="ki-inf-item">🕐 Son: <b>${new Date(k.usedAt).toLocaleDateString('tr-TR')}</b></div>`:''}
+        ${k.note?`<div class="ki-inf-item">📝 <b>${k.note}</b></div>`:''}
+      </div>
+      <div class="ki-actions">
+        <button class="btn sm" onclick="navigator.clipboard.writeText('${k.key}');toast('Kopyalandı')">📋 Kopyala</button>
+        ${status==='active'?`<button class="btn sm danger" onclick="revokeKey('${k.id}')">🚫 İptal</button>`:''}
+        ${status==='revoked'?`<button class="btn sm warn" onclick="reactivateKey('${k.id}')">✓ Aktifleştir</button>`:''}
+        <button class="btn sm ghost" onclick="deleteKey('${k.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function exportCSV(){
+  const rows=['Kullanici,Key,Plan,Durum,Olusturuldu,Bitis,Kullanim,Not',...db.map(k=>`"${k.user}","${k.key}","${k.plan}","${k.status}","${new Date(k.created).toLocaleDateString()}","${k.expires?new Date(k.expires).toLocaleDateString():'Suresiz'}","${k.useCount||0}","${k.note||''}"`)];
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));a.download='p4-keys.csv';a.click();
+  toast('CSV indirildi');
+}
+
+function showSettMsg(m){
+  document.getElementById('settMsg').textContent=m;
+  setTimeout(()=>document.getElementById('settMsg').textContent='',3000);
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),2500);
+}
+
+async function init(){
+  // Load token if saved
+  const saved=localStorage.getItem('p4gt');
+  if(saved)document.getElementById('gtoken').value=saved;
+  await loadKeys();
+}
+</script>
+
+</body>
+</html>
